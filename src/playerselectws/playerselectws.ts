@@ -1,13 +1,15 @@
-import { Injectable } from '@nestjs/common';
-import { MessageBody, OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
+import { MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from 'socket.io';
 import { v4 as uid } from 'uuid';
 
-WebSocketGateway({
-    namespace: 'playerselect',
-    cors: '*'
+@WebSocketGateway(4000 , {
+    namespace:"PlayerSelect",
+    cors: {
+        origin: "*"
+    }
 })
-export class Playerselectws implements OnGatewayConnection {
+export class playerselectws implements OnGatewayConnection{
+
 
     @WebSocketServer() server: Server
     games: Map<string, { client: string, selectionIndex: number, Selected: boolean }[]> = new Map()
@@ -30,7 +32,6 @@ export class Playerselectws implements OnGatewayConnection {
                 gameId.push({ client: client.id, selectionIndex: 13, Selected: false })
                 client.join(users)
                 isUserPlacedInGame = true
-                client.join(users)
                 this.server.emit("Connection", { gameid: users, client: client.id, selectionIndex: 13, Selected: false })
                 this.server.to(users).emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully" })
             }
@@ -44,6 +45,8 @@ export class Playerselectws implements OnGatewayConnection {
             this.server.emit("Connection", { gameid: newGame, client: client.id, selectionIndex: 1, Selected: false })
             this.server.to(newGame).emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully" })
         }
+
+        
 
 
 
@@ -68,6 +71,8 @@ export class Playerselectws implements OnGatewayConnection {
         })
         this.server.to(FoundGame).emit("changed", {})
     }
+
+
 
 
 }

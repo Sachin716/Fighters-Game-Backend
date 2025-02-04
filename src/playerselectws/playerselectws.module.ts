@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { Playerselectws } from './playerselectws';
+import { playerselectws } from './playerselectws';
 
 @Module({
-  providers: [Playerselectws]
+  providers: [playerselectws]
 })
 export class PlayerselectwsModule {}
