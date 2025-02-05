@@ -8,7 +8,7 @@ import { v4 as uid } from 'uuid';
         origin: "*"
     }
 })
-export class playerselectws implements OnGatewayConnection{
+export class playerselectws implements OnGatewayConnection , OnGatewayDisconnect{
 
 
     @WebSocketServer() server: Server
@@ -33,7 +33,7 @@ export class playerselectws implements OnGatewayConnection{
                 client.join(users)
                 isUserPlacedInGame = true
                 this.server.emit("Connection", { gameid: users, client: client.id, selectionIndex: 13, Selected: false  })
-                this.server.to(users).emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully", player:"2" })
+                client.emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully", player:"2" })
             }
         })
         if (isUserPlacedInGame) {
@@ -67,6 +67,20 @@ export class playerselectws implements OnGatewayConnection{
                 games[1] = { client: client.id, selectionIndex: data.selectionIndex, Selected: data.Selected }
                 this.server.to(users).emit("changed", {P1Details:{...games[0]} , P2Details:{...games[1]}})
             }
+        })
+        
+    }
+
+    handleDisconnect(client: Socket) {
+        this.games.forEach((users,games)=>{
+            if(users[0].client == client.id){
+                this.games.set(games,[users[1]])
+            }
+            else if(users[1].client == client.id){
+                this.games.set(games,[users[0]])
+            }
+            client.leave(games)
+            this.server.to(games).emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully", player:"2" })
         })
         
     }
