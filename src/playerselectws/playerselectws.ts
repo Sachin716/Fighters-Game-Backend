@@ -2,7 +2,7 @@ import { MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage
 import { Server, Socket } from 'socket.io';
 import { v4 as uid } from 'uuid';
 
-@WebSocketGateway(4000 , {
+@WebSocketGateway(20000 , {
     namespace:"PlayerSelect",
     cors: {
         origin: "*"
@@ -32,8 +32,8 @@ export class playerselectws implements OnGatewayConnection{
                 gameId.push({ client: client.id, selectionIndex: 13, Selected: false })
                 client.join(users)
                 isUserPlacedInGame = true
-                this.server.emit("Connection", { gameid: users, client: client.id, selectionIndex: 13, Selected: false })
-                this.server.to(users).emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully" })
+                this.server.emit("Connection", { gameid: users, client: client.id, selectionIndex: 13, Selected: false  })
+                this.server.to(users).emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully", player:"2" })
             }
         })
         if (isUserPlacedInGame) {
@@ -42,8 +42,8 @@ export class playerselectws implements OnGatewayConnection{
             const newGame = this.makeNewGame()
             this.games.get(newGame).push({ client: client.id, selectionIndex: 1, Selected: false })
             client.join(newGame)
-            this.server.emit("Connection", { gameid: newGame, client: client.id, selectionIndex: 1, Selected: false })
-            this.server.to(newGame).emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully" })
+            this.server.emit("Connection", { gameid: newGame, client: client.id, selectionIndex: 1, Selected: false  })
+            this.server.to(newGame).emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully", player:"1" })
         }
 
         
@@ -58,18 +58,17 @@ export class playerselectws implements OnGatewayConnection{
 
     @SubscribeMessage('change')
     handleChange(client: Socket, data: { selectionIndex: number, Selected: boolean }) {
-        var FoundGame = null
         this.games.forEach((games, users) => {
             if (games[0].client == client.id) {
                 games[0] = { client: client.id, selectionIndex: data.selectionIndex, Selected: data.Selected }
-                FoundGame = users
+                this.server.to(users).emit("changed", {P1Details:{...games[0]} , P2Details:{...games[1]}})
             }
             else if (games[1].client == client.id) {
                 games[1] = { client: client.id, selectionIndex: data.selectionIndex, Selected: data.Selected }
-                FoundGame = users
+                this.server.to(users).emit("changed", {P1Details:{...games[0]} , P2Details:{...games[1]}})
             }
         })
-        this.server.to(FoundGame).emit("changed", {})
+        
     }
 
 
