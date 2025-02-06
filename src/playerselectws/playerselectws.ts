@@ -59,7 +59,12 @@ export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect 
     @SubscribeMessage('change')
     handleChange(client: Socket, data: { selectionIndex: number, Selected: boolean }) {
         this.games.forEach((games, users) => {
-            if (games[0].client == client.id) {
+            if(games.length == 1){
+                games[0] = { client: client.id, selectionIndex: data.selectionIndex, Selected: data.Selected }
+                this.server.to(users).emit("changed", { P1Details: { ...games[0] }, P2Details: { ...games[1] } })
+            }
+            else{
+                if (games[0].client == client.id) {
                 games[0] = { client: client.id, selectionIndex: data.selectionIndex, Selected: data.Selected }
                 this.server.to(users).emit("changed", { P1Details: { ...games[0] }, P2Details: { ...games[1] } })
             }
@@ -67,7 +72,10 @@ export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect 
                 games[1] = { client: client.id, selectionIndex: data.selectionIndex, Selected: data.Selected }
                 this.server.to(users).emit("changed", { P1Details: { ...games[0] }, P2Details: { ...games[1] } })
             }
+        }
+        console.log(games)
         })
+        
 
     }
 
