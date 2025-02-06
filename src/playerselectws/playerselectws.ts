@@ -2,13 +2,13 @@ import { MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage
 import { Server, Socket } from 'socket.io';
 import { v4 as uid } from 'uuid';
 
-@WebSocketGateway(20000 , {
-    namespace:"PlayerSelect",
+@WebSocketGateway(20000, {
+    namespace: "PlayerSelect",
     cors: {
         origin: "*"
     }
 })
-export class playerselectws implements OnGatewayConnection , OnGatewayDisconnect{
+export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect {
 
 
     @WebSocketServer() server: Server
@@ -32,8 +32,8 @@ export class playerselectws implements OnGatewayConnection , OnGatewayDisconnect
                 gameId.push({ client: client.id, selectionIndex: 13, Selected: false })
                 client.join(users)
                 isUserPlacedInGame = true
-                this.server.emit("Connection", { gameid: users, client: client.id, selectionIndex: 13, Selected: false  })
-                client.emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully", player:"2" })
+                this.server.emit("Connection", { gameid: users, client: client.id, selectionIndex: 13, Selected: false })
+                client.emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully", player: "2" })
             }
         })
         if (isUserPlacedInGame) {
@@ -42,11 +42,11 @@ export class playerselectws implements OnGatewayConnection , OnGatewayDisconnect
             const newGame = this.makeNewGame()
             this.games.get(newGame).push({ client: client.id, selectionIndex: 1, Selected: false })
             client.join(newGame)
-            this.server.emit("Connection", { gameid: newGame, client: client.id, selectionIndex: 1, Selected: false  })
-            this.server.to(newGame).emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully", player:"1" })
+            this.server.to(newGame).emit("Connection", { gameid: newGame, client: client.id, selectionIndex: 1, Selected: false })
+            client.emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully", player: "1" })
         }
 
-        
+
 
 
 
@@ -61,28 +61,45 @@ export class playerselectws implements OnGatewayConnection , OnGatewayDisconnect
         this.games.forEach((games, users) => {
             if (games[0].client == client.id) {
                 games[0] = { client: client.id, selectionIndex: data.selectionIndex, Selected: data.Selected }
-                this.server.to(users).emit("changed", {P1Details:{...games[0]} , P2Details:{...games[1]}})
+                this.server.to(users).emit("changed", { P1Details: { ...games[0] }, P2Details: { ...games[1] } })
             }
             else if (games[1].client == client.id) {
                 games[1] = { client: client.id, selectionIndex: data.selectionIndex, Selected: data.Selected }
-                this.server.to(users).emit("changed", {P1Details:{...games[0]} , P2Details:{...games[1]}})
+                this.server.to(users).emit("changed", { P1Details: { ...games[0] }, P2Details: { ...games[1] } })
             }
         })
-        
+
     }
 
-    handleDisconnect(client: Socket) {
-        this.games.forEach((users,games)=>{
-            if(users[0].client == client.id){
-                this.games.set(games,[users[1]])
-            }
-            else if(users[1].client == client.id){
-                this.games.set(games,[users[0]])
-            }
-            client.leave(games)
-            this.server.to(games).emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully", player:"2" })
+    tempData = []
+
+    handleDisconnect() {
+        this.games.forEach((users, game) => {
+            this.games.set(game, [])
+            this.tempData = users
+            this.server.to(game).emit('connection_check')
         })
-        
+    }
+
+    @SubscribeMessage('in')
+    handleCheck(client: Socket) {
+        this.games.forEach((users, game) => {
+            if (this.tempData.length == 1) {
+                if (this.tempData[0].client == client.id) {
+                    this.games.get(game).push(this.tempData[0])
+                }
+            }
+
+            else if (this.tempData.length == 2) {
+                if (this.tempData[0].client == client.id) {
+                    this.games.get(game).push(this.tempData[0])
+                }
+                else if (this.tempData[1].client == client.id) {
+                    this.games.get(game).push(this.tempData[1])
+                }
+            }
+        })
+
     }
 
 
