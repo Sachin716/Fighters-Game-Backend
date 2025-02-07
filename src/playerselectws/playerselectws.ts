@@ -26,24 +26,49 @@ export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect 
     }
 
     handleConnection(client: Socket) {
+        var isUserInGame = false
         var isUserPlacedInGame = false
-        this.games.forEach((gameId, users) => {
-            if (gameId.length != 2) {
-                gameId.push({ client: client.id, selectionIndex: 13, Selected: false })
-                client.join(users)
-                isUserPlacedInGame = true
-                this.server.emit("Connection", { gameid: users, client: client.id, selectionIndex: 13, Selected: false })
-                client.emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully", player: "2" })
+
+        this.games.forEach((users) => {
+            if (users.length == 1) {
+                if (users[0].client == client.request.connection.remoteAddress) {
+                    isUserInGame = true
+                    client.emit("Game_Joined", { client_id: client.request.connection.remoteAddress, message: "Player Selection WS Joined Successfully", player: "1" })
+                }
             }
+            else {
+                if (users[0].client == client.request.connection.remoteAddress) {
+                    isUserInGame = true
+                    client.emit("Game_Joined", { client_id: client.request.connection.remoteAddress, message: "Player Selection WS Joined Successfully", player: "1" })
+                }
+                if (users[1].client == client.request.connection.remoteAddress) {
+                    isUserInGame = true
+                    client.emit("Game_Joined", { client_id: client.request.connection.remoteAddress, message: "Player Selection WS Joined Successfully", player: "2" })
+                }
+            }
+
         })
-        if (isUserPlacedInGame) {
-        }
-        else {
-            const newGame = this.makeNewGame()
-            this.games.get(newGame).push({ client: client.id, selectionIndex: 1, Selected: false })
-            client.join(newGame)
-            this.server.to(newGame).emit("Connection", { gameid: newGame, client: client.id, selectionIndex: 1, Selected: false })
-            client.emit("Game_Joined", { client_id: client.id, message: "Player Selection WS Joined Successfully", player: "1" })
+        if (!isUserInGame) {
+
+
+            this.games.forEach((gameId, users) => {
+                if (gameId.length != 2) {
+                    gameId.push({ client: client.request.connection.remoteAddress, selectionIndex: 13, Selected: false })
+                    client.join(users)
+                    isUserPlacedInGame = true
+                    this.server.emit("Connection", { gameid: users, client: client.request.connection.remoteAddress, selectionIndex: 13, Selected: false })
+                    client.emit("Game_Joined", { client_id: client.request.connection.remoteAddress, message: "Player Selection WS Joined Successfully", player: "2" })
+                }
+            })
+            if (isUserPlacedInGame) {
+            }
+            else {
+                const newGame = this.makeNewGame()
+                this.games.get(newGame).push({ client: client.request.connection.remoteAddress, selectionIndex: 1, Selected: false })
+                client.join(newGame)
+                this.server.to(newGame).emit("Connection", { gameid: newGame, client: client.request.connection.remoteAddress, selectionIndex: 1, Selected: false })
+                client.emit("Game_Joined", { client_id: client.request.connection.remoteAddress, message: "Player Selection WS Joined Successfully", player: "1" })
+            }
         }
 
 
@@ -59,23 +84,23 @@ export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect 
     @SubscribeMessage('change')
     handleChange(client: Socket, data: { selectionIndex: number, Selected: boolean }) {
         this.games.forEach((games, users) => {
-            if(games.length == 1){
-                games[0] = { client: client.id, selectionIndex: data.selectionIndex, Selected: data.Selected }
+            if (games.length == 1) {
+                games[0] = { client: client.request.connection.remoteAddress, selectionIndex: data.selectionIndex, Selected: data.Selected }
                 this.server.to(users).emit("changed", { P1Details: { ...games[0] }, P2Details: { ...games[1] } })
             }
-            else{
-                if (games[0].client == client.id) {
-                games[0] = { client: client.id, selectionIndex: data.selectionIndex, Selected: data.Selected }
-                this.server.to(users).emit("changed", { P1Details: { ...games[0] }, P2Details: { ...games[1] } })
+            else {
+                if (games[0].client == client.request.connection.remoteAddress) {
+                    games[0] = { client: client.request.connection.remoteAddress, selectionIndex: data.selectionIndex, Selected: data.Selected }
+                    this.server.to(users).emit("changed", { P1Details: { ...games[0] }, P2Details: { ...games[1] } })
+                }
+                else if (games[1].client == client.request.connection.remoteAddress) {
+                    games[1] = { client: client.request.connection.remoteAddress, selectionIndex: data.selectionIndex, Selected: data.Selected }
+                    this.server.to(users).emit("changed", { P1Details: { ...games[0] }, P2Details: { ...games[1] } })
+                }
             }
-            else if (games[1].client == client.id) {
-                games[1] = { client: client.id, selectionIndex: data.selectionIndex, Selected: data.Selected }
-                this.server.to(users).emit("changed", { P1Details: { ...games[0] }, P2Details: { ...games[1] } })
-            }
-        }
-        console.log(games)
+            console.log(games)
         })
-        
+
 
     }
 
@@ -99,10 +124,10 @@ export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect 
             }
 
             else if (this.tempData.length == 2) {
-                if (this.tempData[0].client == client.id) {
+                if (this.tempData[0].client == client.request.connection.remoteAddress) {
                     this.games.get(game).push(this.tempData[0])
                 }
-                else if (this.tempData[1].client == client.id) {
+                else if (this.tempData[1].client == client.request.connection.remoteAddress) {
                     this.games.get(game).push(this.tempData[1])
                 }
             }
