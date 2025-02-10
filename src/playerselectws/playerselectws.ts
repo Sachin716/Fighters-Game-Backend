@@ -29,20 +29,23 @@ export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect 
         var isUserInGame = false
         var isUserPlacedInGame = false
 
-        this.games.forEach((users) => {
+        this.games.forEach((users, game) => {
             if (users.length == 1) {
                 if (users[0].client == client.request.connection.remoteAddress) {
                     isUserInGame = true
+                    client.join(game)
                     client.emit("Game_Joined", { client_id: client.request.connection.remoteAddress, message: "Player Selection WS Joined Successfully", player: "1" })
                 }
             }
             else {
                 if (users[0].client == client.request.connection.remoteAddress) {
                     isUserInGame = true
+                    client.join(game)
                     client.emit("Game_Joined", { client_id: client.request.connection.remoteAddress, message: "Player Selection WS Joined Successfully", player: "1" })
                 }
                 if (users[1].client == client.request.connection.remoteAddress) {
                     isUserInGame = true
+                    client.join(game)
                     client.emit("Game_Joined", { client_id: client.request.connection.remoteAddress, message: "Player Selection WS Joined Successfully", player: "2" })
                 }
             }
@@ -108,8 +111,8 @@ export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect 
 
     handleDisconnect() {
         this.games.forEach((users, game) => {
-            this.games.set(game, [])
             this.tempData = users
+            this.games.set(game, [])
             this.server.to(game).emit('connection_check')
         })
     }
