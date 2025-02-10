@@ -1,6 +1,8 @@
 import { MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from 'socket.io';
 import { v4 as uid } from 'uuid';
+import * as jwt from "jsonwebtoken";
+import { JwtPayload } from "jsonwebtoken";
 
 @WebSocketGateway(20000, {
     namespace: "PlayerSelect",
@@ -28,6 +30,13 @@ export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect 
     handleConnection(client: Socket) {
         var isUserInGame = false
         var isUserPlacedInGame = false
+
+        const userToken = client.handshake.query.token[0]
+
+        const userData = jwt.verify(userToken, process.env.secret) as JwtPayload
+        const userId = userData.id
+
+        console.log(userId)
 
         this.games.forEach((users, game) => {
             if (users.length == 1) {
