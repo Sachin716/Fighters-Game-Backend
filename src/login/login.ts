@@ -8,7 +8,7 @@ export class Login {
 
     constructor(private readonly jwt: JwtService) { }
 
-    async handleUserCreation(data: { username: string, password: string, name: string }) {
+    async handleUserCreation(data: { username: string, password: string, name: string }, ip: any) {
         const prisma = await new PrismaClient();
         const hashedPassword = crypto.createHash('sha256').update(data.password).digest('hex')
         try {
@@ -40,12 +40,14 @@ export class Login {
 
                 }
             })
-            const jwt = this.jwt.sign(user)
+            const ipAdd = ip.toString()
+            const tokenData = `${user.id}-${ipAdd}`
+            const token = crypto.createHmac('sha256', process.env.secret).update(tokenData).digest('hex')
             prisma.$disconnect()
             return {
                 status: 200,
                 message: "Account Created Successfully",
-                token: jwt.toString()
+                token: token.toString()
             }
 
         }
@@ -65,26 +67,33 @@ export class Login {
 
 
 
-    async handleLogin(data: { username: string, password: string }) {
+    async handleLogin(data: { username: string, password: string }, ip: any) {
         const prisma = new PrismaClient()
         const hashedPassword = crypto.createHash('sha256').update(data.password).digest('hex')
         try {
-            const userData = await prisma.user.findFirstOrThrow({
+            const userid = await prisma.user.findFirstOrThrow({
                 where: {
                     AND: {
                         username: data.username,
                         hashedPassword: hashedPassword
                     }
+                },
+                select: {
+                    id: true
                 }
             })
-            const token = this.jwt.sign(userData)
+            const ipAdd = ip.toString()
+            const tokenData = `${userid.id}-${ipAdd}`
+            const token = crypto.createHmac('sha256', process.env.secret).update(tokenData).digest('hex')
+            prisma.$disconnect()
             return {
                 status: 200,
                 message: "Login Successful",
-                jwt: token.toString()
+                token: token.toString()
             }
         }
         catch {
+            prisma.$disconnect()
             return {
                 status: 200,
                 message: "Username or password incorrect"
@@ -94,6 +103,50 @@ export class Login {
 
     async HandleDeletion() {
         // implement logic to delete all inactive users and call it when ever someone logs in to the system
+    }
+
+
+    async validation(data, ip) {
+        const prisma = new PrismaClient();
+        const users = await prisma.user.findMany();
+        var isValidated = false
+        var token = ""
+        var userdata = {}
+        const ipAdd = ip.toString()
+
+        users.map((item) => {
+
+            const tokenData = `${item.id}-${ipAdd}`
+            const token = crypto.createHmac('sha256', process.env.secret).update(tokenData).digest('hex')
+
+            if (data.token === token) {
+                prisma.$disconnect()
+                isValidated = true
+                userdata = {
+                    username: item.username,
+                    name: item.name
+                }
+            }
+            else {
+
+            }
+        })
+        prisma.$disconnect()
+        if (!isValidated) {
+            return {
+                status: 401,
+                message: 'Invalid token',
+            }
+        }
+        else {
+            return {
+                status: 201,
+                message: 'Validated',
+                ...userdata
+            }
+        }
+
+
     }
 
 
