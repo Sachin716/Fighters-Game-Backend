@@ -69,7 +69,9 @@ export class Login {
 
     async handleLogin(data: { username: string, password: string }, ip: any) {
         const prisma = new PrismaClient()
-        const hashedPassword = crypto.createHash('sha256').update(data.password).digest('hex')
+        const pass = data.password
+        console.log(data)
+        const hashedPassword = crypto.createHash('sha256').update(pass).digest('hex')
         try {
             const userid = await prisma.user.findFirstOrThrow({
                 where: {
@@ -95,7 +97,7 @@ export class Login {
         catch {
             prisma.$disconnect()
             return {
-                status: 200,
+                status: 403,
                 message: "Username or password incorrect"
             }
         }
