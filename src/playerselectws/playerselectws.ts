@@ -75,6 +75,7 @@ export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect 
                     users[1].Selected = data.Selected
                 }
             }
+            this.server.to(game).emit('changed', { Player1: this.games.get(game)[0], Player2: this.games.get(game)[1] })
         })
     }
 
