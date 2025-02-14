@@ -13,8 +13,8 @@ export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect 
 
 
     @WebSocketServer() server: Server
-    games: Map<string, { token: string, selectionIndex: number, Selected: boolean, game: string }[]> = new Map()
-    Tempgames: Map<string, { token: string, selectionIndex: number, Selected: boolean, game: string }[]> = new Map()
+    games: Map<string, { token: string, selectionIndex: number, Selected: Boolean, game: string }[]> = new Map()
+    Tempgames: Map<string, { token: string, selectionIndex: number, Selected: Boolean, game: string }[]> = new Map()
 
     createNewGame() {
         return uid();
@@ -48,6 +48,34 @@ export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect 
         }
 
 
+    }
+
+
+
+    @SubscribeMessage("playerChange")
+    handlePlayerChange(data: { token: string, selectionIndex: number, Selected: Boolean }) {
+        this.games.forEach((users, game) => {
+            if (users.length == 1) {
+                if (users[0].token == data.token) {
+                    users[0].token = data.token
+                    users[0].selectionIndex = data.selectionIndex
+                    users[0].Selected = data.Selected
+                }
+            }
+
+            if (users.length == 2) {
+                if (users[0].token == data.token) {
+                    users[0].token = data.token
+                    users[0].selectionIndex = data.selectionIndex
+                    users[0].Selected = data.Selected
+                }
+                else if (users[1].token == data.token) {
+                    users[1].token = data.token
+                    users[1].selectionIndex = data.selectionIndex
+                    users[1].Selected = data.Selected
+                }
+            }
+        })
     }
 
     @SubscribeMessage("check")
