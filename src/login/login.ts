@@ -11,6 +11,31 @@ export class Login {
     async handleUserCreation(data: { username: string, password: string, name: string }, ip: any) {
         const prisma = await new PrismaClient();
         const hashedPassword = crypto.createHash('sha256').update(data.password).digest('hex')
+
+        try {
+            const unameAttempt = await prisma.user.findFirstOrThrow({
+                where: {
+                    username: data.username
+                }
+            }
+            )
+            console.log(unameAttempt)
+
+            if (unameAttempt) {
+                return {
+                    status: 300,
+                    message: "Username taken please pick another username"
+                }
+            }
+        }
+        catch {
+
+        }
+
+
+
+
+
         try {
             const creation = await prisma.user.create({
                 data: {
@@ -19,7 +44,10 @@ export class Login {
                     hashedPassword: hashedPassword
                 }
             })
+
+
         }
+
         catch {
             prisma.$disconnect()
             return {
@@ -70,7 +98,6 @@ export class Login {
     async handleLogin(data: { username: string, password: string }, ip: any) {
         const prisma = new PrismaClient()
         const pass = data.password
-        console.log(data)
         const hashedPassword = crypto.createHash('sha256').update(pass).digest('hex')
         try {
             const userid = await prisma.user.findFirstOrThrow({
