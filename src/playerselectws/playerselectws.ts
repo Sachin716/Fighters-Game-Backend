@@ -1,7 +1,7 @@
-import { MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
+import { OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from 'socket.io';
 import { v4 as uid } from 'uuid';
-import * as crypto from 'crypto';
+
 
 @WebSocketGateway(20000, {
     namespace: "PlayerSelect",
@@ -53,7 +53,7 @@ export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect 
 
 
     @SubscribeMessage("playerChange")
-    handlePlayerChange(data: { token: string, selectionIndex: number, Selected: Boolean }) {
+    handlePlayerChange(data: { token: string, selectionIndex: number, Selected: Boolean, time: string }, client: Socket) {
         this.games.forEach((users, game) => {
             if (users.length == 1) {
                 if (users[0].token == data.token) {
@@ -75,6 +75,9 @@ export class playerselectws implements OnGatewayConnection, OnGatewayDisconnect 
                     users[1].Selected = data.Selected
                 }
             }
+            const cur = Date.now()
+            const curConcat = cur % 100000 - parseInt((data.time))
+            client.emit('latency', { latency: curConcat })
             this.server.to(game).emit('changed', { Player1: this.games.get(game)[0], Player2: this.games.get(game)[1] })
         })
     }
